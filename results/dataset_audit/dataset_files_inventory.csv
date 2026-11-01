@@ -1,0 +1,9 @@
+directory,filename,extension,size_bytes,size_mb,rows,columns,sha256_prefix,sha256_full
+D:\Network IDS\data\raw,unsw_nb15_test.csv,.csv,15380800,14.67,82332,45,734fe6642edf758f,734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559
+D:\Network IDS\data\raw,unsw_nb15_train.csv,.csv,32293018,30.8,175341,45,bec7dd5ec88dc2a0,bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa
+D:\NIDS\Network-Intrusion-Detection-System\data\raw,unsw_nb15_test.csv,.csv,15380800,14.67,82332,45,734fe6642edf758f,734fe6642edf758f7c94d7d9149426b49d202fe8e7bf0bef47392489c3c0a559
+D:\NIDS\Network-Intrusion-Detection-System\data\raw,unsw_nb15_train.csv,.csv,32293018,30.8,175341,45,bec7dd5ec88dc2a0,bec7dd5ec88dc2a0ccc7a07879d338395ed7421750f675fd0339e07dfe0648fa
+D:\IDS - CAPSTONE\Network-Intrusion-Detection-System\data\raw,unsw_nb15_test.csv,.csv,13367274,12.75,82332,36,51a97984e6e998e8,51a97984e6e998e830d15a7d7aeceea0ff30e9c7b0cefb850be579cb1660218f
+D:\IDS - CAPSTONE\Network-Intrusion-Detection-System\data\raw,unsw_nb15_train.csv,.csv,28055848,26.76,175341,36,2c8300633df8ab44,2c8300633df8ab443ddb4121ced66db2ce30900202d6f3b9358c263d5d886232
+D:\IDS - CAPSTONE\UNSW NB15,UNSW_NB15_testing-set.parquet,.parquet,4538929,4.33,82332,36,a0270aeb2219aaa6,a0270aeb2219aaa686551cdf6d4f94c4478b69f819225176149606cd1492d5e1
+D:\IDS - CAPSTONE\UNSW NB15,UNSW_NB15_training-set.parquet,.parquet,9618034,9.17,175341,36,f6989e65032e7577,f6989e65032e75770f37a5fa64d1d556effd6ac6240c99b0ab4df73b490c1918

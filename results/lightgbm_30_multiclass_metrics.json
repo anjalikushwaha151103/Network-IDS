@@ -1,0 +1,120 @@
+{
+  "model_name": "lightgbm",
+  "n_features": 30,
+  "task": "multiclass",
+  "active_features": [
+    "avg_pkt_size",
+    "rate",
+    "byte_ratio",
+    "smean",
+    "sbytes",
+    "total_bytes",
+    "dinpkt",
+    "dur",
+    "duration_log",
+    "dload",
+    "dbytes",
+    "pkt_ratio",
+    "sload",
+    "total_pkts",
+    "ct_dst_sport_ltm",
+    "dmean",
+    "dpkts",
+    "tcprtt",
+    "ackdat",
+    "synack",
+    "state",
+    "sinpkt",
+    "djit",
+    "dloss",
+    "sloss",
+    "ct_src_dport_ltm",
+    "sjit",
+    "dwin",
+    "proto",
+    "spkts"
+  ],
+  "accuracy": 0.7675,
+  "f1_macro": 0.41879881502398275,
+  "f1_weighted": 0.7713150414301133,
+  "precision_macro": 0.44112393437254227,
+  "recall_macro": 0.42403846521388316,
+  "fit_time_seconds": 2.018251895904541,
+  "eval_time_seconds": 0.058203697204589844,
+  "total_time_seconds": 7.246603727340698,
+  "classification_report": {
+    "Normal": {
+      "precision": 0.9205298013245033,
+      "recall": 0.7748049052396878,
+      "f1-score": 0.8414043583535109,
+      "support": 897.0
+    },
+    "Generic": {
+      "precision": 0.9977116704805492,
+      "recall": 0.960352422907489,
+      "f1-score": 0.978675645342312,
+      "support": 454.0
+    },
+    "Exploits": {
+      "precision": 0.5782312925170068,
+      "recall": 0.8471760797342193,
+      "f1-score": 0.6873315363881402,
+      "support": 301.0
+    },
+    "Fuzzers": {
+      "precision": 0.3112033195020747,
+      "recall": 0.528169014084507,
+      "f1-score": 0.391644908616188,
+      "support": 142.0
+    },
+    "DoS": {
+      "precision": 0.20512820512820512,
+      "recall": 0.09302325581395349,
+      "f1-score": 0.128,
+      "support": 86.0
+    },
+    "Reconnaissance": {
+      "precision": 0.8873239436619719,
+      "recall": 0.8076923076923077,
+      "f1-score": 0.8456375838926175,
+      "support": 78.0
+    },
+    "Analysis": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 13.0
+    },
+    "Backdoor": {
+      "precision": 0.1111111111111111,
+      "recall": 0.0625,
+      "f1-score": 0.08,
+      "support": 16.0
+    },
+    "Shellcode": {
+      "precision": 0.4,
+      "recall": 0.16666666666666666,
+      "f1-score": 0.23529411764705882,
+      "support": 12.0
+    },
+    "Worms": {
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1-score": 0.0,
+      "support": 1.0
+    },
+    "accuracy": 0.7675,
+    "macro avg": {
+      "precision": 0.44112393437254227,
+      "recall": 0.42403846521388316,
+      "f1-score": 0.41879881502398275,
+      "support": 2000.0
+    },
+    "weighted avg": {
+      "precision": 0.7951724458137999,
+      "recall": 0.7675,
+      "f1-score": 0.7713150414301133,
+      "support": 2000.0
+    }
+  }
+}

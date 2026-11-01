@@ -1,0 +1,103 @@
+# XAI-NIDS Master Configuration
+
+dataset:
+  name: "unsw_nb15"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  samples_dir: "data/samples"
+  train_filename: "unsw_nb15_train.csv"
+  test_filename: "unsw_nb15_test.csv"
+  system_fallback_paths:
+    - "D:/NIDS/Network-Intrusion-Detection-System/data/raw"
+    - "D:/IDS - CAPSTONE/Network-Intrusion-Detection-System/data/raw"
+    - "D:/IDS - CAPSTONE/UNSW NB15"
+  remote_urls:
+    train_csv: "https://cloudstor.aarnet.edu.au/plus/s/2DhnLGDdEECo4ys/download?path=%2F&files=UNSW_NB15_training-set.csv"
+    test_csv: "https://cloudstor.aarnet.edu.au/plus/s/2DhnLGDdEECo4ys/download?path=%2F&files=UNSW_NB15_testing-set.csv"
+
+preprocessing:
+  target_binary_col: "label"
+  target_multiclass_col: "attack_cat"
+  drop_columns:
+    - "id"
+    - "srcip"
+    - "dstip"
+    - "sport"
+    - "dsport"
+    - "stime"
+    - "ltime"
+  categorical_cols:
+    - "proto"
+    - "service"
+    - "state"
+  scaling_method: "standard" # "standard" or "robust"
+  engineer_features: true
+  engineered_features:
+    - "total_bytes"
+    - "total_pkts"
+    - "byte_ratio"
+    - "pkt_ratio"
+    - "avg_pkt_size"
+    - "duration_log"
+
+feature_selection:
+  ranking_method: "mutual_info" # "mutual_info" or "tree_importance"
+  tiers:
+    - 49
+    - 30
+    - 20
+    - 15
+  active_tier: 30
+
+model:
+  default_model: "lightgbm" # "logistic_regression", "random_forest", "lightgbm", "xgboost", "mlp"
+  task: "multiclass" # "binary" or "multiclass"
+  random_state: 42
+  hyperparameters:
+    logistic_regression:
+      max_iter: 1000
+      C: 1.0
+      solver: "lbfgs"
+    random_forest:
+      n_estimators: 100
+      max_depth: 16
+      random_state: 42
+      n_jobs: -1
+    lightgbm:
+      n_estimators: 150
+      learning_rate: 0.05
+      max_depth: 10
+      num_leaves: 31
+      random_state: 42
+      n_jobs: -1
+      verbose: -1
+    xgboost:
+      n_estimators: 150
+      learning_rate: 0.05
+      max_depth: 8
+      random_state: 42
+      n_jobs: -1
+      eval_metric: "mlogloss"
+    mlp:
+      hidden_layer_sizes: [128, 64]
+      max_iter: 150
+      learning_rate_init: 0.001
+      random_state: 42
+
+openset:
+  method: "energy" # "energy", "openmax", "msp", "isolation_forest"
+  energy_temperature: 1.0
+  threshold_percentile: 5.0
+  held_out_classes:
+    - "Reconnaissance"
+    - "Backdoor"
+    - "Shellcode"
+    - "Worms"
+
+xai:
+  background_sample_size: 100
+  top_k_features: 5
+
+server:
+  host: "127.0.0.1"
+  port: 8000

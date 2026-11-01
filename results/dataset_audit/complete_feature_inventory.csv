@@ -1,0 +1,52 @@
+feature,type,original_dtype,missing_pct,retained,transformation,included_in_model_inputs,reason_notes
+id,Raw Column,int64,0.0,False,Dropped,False,Arbitrary database row identifier; causes severe data leakage and memorization.
+dur,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+proto,Raw Column,str,0.0,True,Label Encoded (with unseen category fallback),True,Core protocol and connection metadata.
+service,Raw Column,str,0.0,True,Label Encoded (with unseen category fallback),True,Core protocol and connection metadata.
+state,Raw Column,str,0.0,True,Label Encoded (with unseen category fallback),True,Core protocol and connection metadata.
+spkts,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dpkts,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+sbytes,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dbytes,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+rate,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+sttl,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dttl,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+sload,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dload,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+sloss,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dloss,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+sinpkt,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dinpkt,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+sjit,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+djit,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+swin,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+stcpb,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dtcpb,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dwin,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+tcprtt,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+synack,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ackdat,Raw Column,float64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+smean,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+dmean,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+trans_depth,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+response_body_len,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_srv_src,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_state_ttl,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_dst_ltm,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_src_dport_ltm,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_dst_sport_ltm,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_dst_src_ltm,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+is_ftp_login,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_ftp_cmd,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_flw_http_mthd,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_src_ltm,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+ct_srv_dst,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+is_sm_ips_ports,Raw Column,int64,0.0,True,"StandardScaler (zero mean, unit variance)",True,Continuous flow traffic metric.
+attack_cat,Raw Column,str,0.0,False,Target encoded (binary integer or multiclass index),False,Target label (prediction ground truth); not an input feature.
+label,Raw Column,int64,0.0,False,Target encoded (binary integer or multiclass index),False,Target label (prediction ground truth); not an input feature.
+total_bytes,Engineered Feature,derived (float64),0.0,True,StandardScaler,True,Derived interaction metric; scaled.
+total_pkts,Engineered Feature,derived (float64),0.0,True,StandardScaler,True,Derived interaction metric; scaled.
+byte_ratio,Engineered Feature,derived (float64),0.0,True,StandardScaler,True,Derived interaction metric; scaled.
+pkt_ratio,Engineered Feature,derived (float64),0.0,True,StandardScaler,True,Derived interaction metric; scaled.
+avg_pkt_size,Engineered Feature,derived (float64),0.0,True,StandardScaler,True,Derived interaction metric; scaled.
+duration_log,Engineered Feature,derived (float64),0.0,True,StandardScaler,True,Derived interaction metric; scaled.

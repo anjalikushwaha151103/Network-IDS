@@ -1,0 +1,33 @@
+{
+  "proto": {
+    "n_unique_train": 133,
+    "n_unique_test": 131,
+    "unseen_in_test_count": 0,
+    "unseen_in_test_examples": [],
+    "unseen_in_train_count": 2
+  },
+  "service": {
+    "n_unique_train": 13,
+    "n_unique_test": 13,
+    "unseen_in_test_count": 0,
+    "unseen_in_test_examples": [],
+    "unseen_in_train_count": 0
+  },
+  "state": {
+    "n_unique_train": 9,
+    "n_unique_test": 7,
+    "unseen_in_test_count": 2,
+    "unseen_in_test_examples": [
+      "CLO",
+      "ACC"
+    ],
+    "unseen_in_train_count": 4
+  },
+  "attack_cat": {
+    "n_unique_train": 10,
+    "n_unique_test": 10,
+    "unseen_in_test_count": 0,
+    "unseen_in_test_examples": [],
+    "unseen_in_train_count": 0
+  }
+}

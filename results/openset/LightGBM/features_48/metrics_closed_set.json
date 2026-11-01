@@ -1,0 +1,63 @@
+{
+  "model": "LightGBM",
+  "feature_count": 48,
+  "accuracy": 0.7844817617658774,
+  "macro_f1": 0.5384764278468287,
+  "weighted_f1": 0.7934578441228936,
+  "validation_accuracy": 0.8520761245674741,
+  "validation_macro_f1": 0.6568185968242527,
+  "training_time_seconds": 13.645592199987732,
+  "inference_latency_ms_per_sample": 0.03738238362623942,
+  "total_test_samples": 77831,
+  "classification_report": {
+    "Normal": {
+      "precision": 0.968682690006496,
+      "recall": 0.7657567567567568,
+      "f1-score": 0.8553487599812828,
+      "support": 37000.0
+    },
+    "Analysis": {
+      "precision": 0.04557935200439319,
+      "recall": 0.12259970457902511,
+      "f1-score": 0.06645316253002402,
+      "support": 677.0
+    },
+    "Generic": {
+      "precision": 0.9977126674654178,
+      "recall": 0.970801759313232,
+      "f1-score": 0.9840732683372277,
+      "support": 18871.0
+    },
+    "Exploits": {
+      "precision": 0.6248921749845964,
+      "recall": 0.9110671936758893,
+      "f1-score": 0.7413200789415978,
+      "support": 11132.0
+    },
+    "Fuzzers": {
+      "precision": 0.32872833361935816,
+      "recall": 0.6319696469811943,
+      "f1-score": 0.4324904041544367,
+      "support": 6062.0
+    },
+    "DoS": {
+      "precision": 0.6757281553398058,
+      "recall": 0.0851063829787234,
+      "f1-score": 0.15117289313640314,
+      "support": 4089.0
+    },
+    "accuracy": 0.7844817617658774,
+    "macro avg": {
+      "precision": 0.6068872289033446,
+      "recall": 0.5812169073808034,
+      "f1-score": 0.5384764278468287,
+      "support": 77831.0
+    },
+    "weighted avg": {
+      "precision": 0.853285397551114,
+      "recall": 0.7844817617658774,
+      "f1-score": 0.7934578441228936,
+      "support": 77831.0
+    }
+  }
+}

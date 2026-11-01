@@ -169,39 +169,37 @@ def test_weibull_fitting_and_tail_sizing(trained_artifacts, partitioned_data):
 
 def test_deterministic_fallbacks_zero_variance_and_small_sample():
     """Test 4: Deterministic fallbacks handle zero-variance tail distances and zero correct samples without jitter."""
-    # Scenario A: Zero variance tail distances (identical distance vectors)
-    # 10 samples of class 0, all identical logits
-    identical_logits = np.ones((10, 6)) * 5.0
-    labels = np.zeros(10, dtype=int)
-    mock_model = DummyModelWithCustomLogits(identical_logits)
+    # Synthetic dataset with 6 classes (5 samples per class = 30 samples)
+    np.random.seed(42)
+    n_per_class = 6
+    n_classes = 6
+    synthetic_logits = np.random.randn(n_classes * n_per_class, n_classes)
+    labels = np.repeat(np.arange(n_classes), n_per_class)
+    preds = np.copy(labels)
 
-    detector = OpenMaxDetector(alpha=3, min_eta=5, max_eta=20)
-    detector.fit(identical_logits, labels, mock_model)
+    # Class 0: force zero variance in logits (all identical) -> triggers zero_variance_tail_fallback
+    synthetic_logits[:n_per_class, :] = 5.0
 
+    # Class 1: force 0 correct predictions (preds != 1) -> triggers zero_correct_samples fallback
+    preds[labels == 1] = 0
+
+    mock_model = DummyModelWithCustomLogits(synthetic_logits, preds=preds)
+
+    detector = OpenMaxDetector(alpha=3, min_eta=3, max_eta=5)
+    detector.fit(synthetic_logits, labels, mock_model)
+
+    # Check Class 0 triggered zero_variance fallback
     params_0 = detector.weibull_params_[0]
     assert params_0["fallback_applied"] is True, "Zero variance tail must trigger fallback"
     assert params_0["fallback_reason"] == "zero_variance_tail_fallback"
     assert params_0["shape"] == 1.0, "Deterministic fallback shape must be 1.0"
     assert params_0["scale"] >= 1e-4, "Deterministic fallback scale must be >= 1e-4"
 
-    # Scenario B: Class has 0 correctly classified samples
-    # Mock model predicts wrong class for all samples of class 1
-    logits_b = np.array([
-        [10.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # true 0, predicted 0 (correct)
-        [10.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # true 0, predicted 0 (correct)
-        [10.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # true 1, predicted 0 (INCORRECT)
-        [10.0, 0.0, 0.0, 0.0, 0.0, 0.0],  # true 1, predicted 0 (INCORRECT)
-    ])
-    labels_b = np.array([0, 0, 1, 1])
-    preds_b = np.array([0, 0, 0, 0])  # class 1 has 0 correct
-    mock_model_b = DummyModelWithCustomLogits(logits_b, preds=preds_b)
-
-    detector_b = OpenMaxDetector(alpha=2, min_eta=2, max_eta=5)
-    detector_b.fit(logits_b, labels_b, mock_model_b)
-
-    params_1 = detector_b.weibull_params_[1]
-    assert params_1["fallback_applied"] is True
+    # Check Class 1 triggered zero_correct_samples fallback
+    params_1 = detector.weibull_params_[1]
+    assert params_1["fallback_applied"] is True, "Zero correct predictions must trigger fallback"
     assert "zero_correct_samples" in params_1["fallback_reason"]
+    assert params_1["n_correct"] == n_per_class
 
 
 def test_openmax_recalibration_and_seven_class_output(trained_artifacts, partitioned_data):
@@ -344,7 +342,7 @@ def test_confusion_matrix_and_metrics_consistency():
     }
 
     for path, op_key in [(cm_fpr_file, "tau_FPR05"), (cm_cov_file, "tau_Cov95")]:
-        cm_df = pd.read_csv(path, index_index=False if "index" in pd.read_csv(path).columns else None, index_col=0)
+        cm_df = pd.read_csv(path, index_col=0)
         cm = cm_df.values
 
         assert cm.shape == (7, 7), f"{path} must be 7x7"

@@ -1,0 +1,23 @@
+{
+  "detector": "OpenMaxDetector",
+  "method": "OpenMax (EVT-Based Adaptation)",
+  "adaptation_note": "Tree-based adaptation using LightGBM raw margin vectors (predict_logits) instead of CNN penultimate activations.",
+  "hyperparameters": {
+    "alpha": 3,
+    "eta_ratio": 0.2,
+    "min_eta": 5,
+    "max_eta": 20,
+    "distance_metric": "euclidean"
+  },
+  "model_file": "results\\openset\\LightGBM\\features_48\\model.pkl",
+  "preprocessor_file": "results\\openset\\LightGBM\\features_48\\preprocessor.pkl",
+  "n_features": 48,
+  "evt_fitting_set": "D_evt_fit (12,138 samples)",
+  "calibration_set": "D_threshold_cal (12,139 samples)",
+  "test_set": "Official untouched UNSW-NB15 test set (82,332 samples: 77,831 known, 4,501 unknown)",
+  "thresholds": {
+    "tau_FPR05": 0.18067639835714,
+    "tau_Cov95": 0.2625228074235228
+  },
+  "reproducibility_seed": 42
+}

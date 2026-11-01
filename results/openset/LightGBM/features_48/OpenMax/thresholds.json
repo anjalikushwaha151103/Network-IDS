@@ -1,0 +1,12 @@
+{
+  "percentile_target": 95.0,
+  "percentile_method": "linear",
+  "normal_cal_samples": 4200,
+  "total_cal_samples": 12139,
+  "tau_FPR05": 0.18067639835714,
+  "tau_Cov95": 0.2625228074235228,
+  "normal_score_mean": 0.030751217812513058,
+  "normal_score_std": 0.07065366127021677,
+  "all_known_score_mean": 0.08260280636867232,
+  "all_known_score_std": 0.11341756285078686
+}

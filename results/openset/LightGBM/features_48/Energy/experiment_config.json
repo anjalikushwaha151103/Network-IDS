@@ -1,0 +1,14 @@
+{
+  "detector": "EnergyDetector",
+  "temperature": 1.0,
+  "model_file": "results\\openset\\LightGBM\\features_48\\model.pkl",
+  "preprocessor_file": "results\\openset\\LightGBM\\features_48\\preprocessor.pkl",
+  "n_features": 48,
+  "calibration_set": "D_threshold_cal (12,139 samples)",
+  "test_set": "Official untouched UNSW-NB15 test set (82,332 samples)",
+  "thresholds": {
+    "tau_FPR05": -0.1836350296612805,
+    "tau_Cov95": -0.0495153485223242
+  },
+  "reproducibility_seed": 42
+}

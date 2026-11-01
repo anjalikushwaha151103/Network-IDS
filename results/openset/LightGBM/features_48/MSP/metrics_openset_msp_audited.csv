@@ -1,0 +1,21 @@
+metric,value,type,description
+AUROC,0.860064489644105,threshold_independent,Area Under ROC Curve for Unknown vs Known
+AUPR-Out,0.35519743216817357,threshold_independent,Precision-Recall AUC for Unknown attack detection
+AUPR-In,0.9904827162474203,threshold_independent,Precision-Recall AUC for Known traffic retention
+OSCR_AUC,0.7176681946689072,threshold_independent,Open-Set Classification Rate Curve Area
+tau_FPR05_threshold,0.44803375866101613,operating_point,Calibrated rejection threshold on Normal calibration flows
+tau_FPR05_open_set_accuracy,0.7075013360540252,operating_point,7-class accuracy across all 82332 test flows (58250 / 82332)
+tau_FPR05_open_set_macro_f1,0.47776894073902965,operating_point,Unweighted mean F1 score across all 7 classes
+tau_FPR05_open_set_weighted_f1,0.7416237626040839,operating_point,Support-weighted mean F1 score across all 7 classes
+tau_FPR05_realized_test_fpr_normal,0.12575675675675677,operating_point,Realized False Positive Rate on Normal test flows (4653 / 37000)
+tau_FPR05_realized_test_fpr_known,0.16806927830812915,operating_point,Rejection rate across all known test flows (13085 / 77831)
+tau_FPR05_known_coverage,0.8319307216918709,operating_point,Known traffic accepted as known (64746 / 77831)
+tau_FPR05_unknown_detection_rate,0.6229726727393913,operating_point,Recall on all unknown attack flows (2804 / 4501)
+tau_Cov95_threshold,0.5264918953970288,operating_point,Calibrated rejection threshold on all Known calibration flows
+tau_Cov95_open_set_accuracy,0.7516639945586163,operating_point,7-class accuracy across all 82332 test flows (61887 / 82332)
+tau_Cov95_open_set_macro_f1,0.5049243886448659,operating_point,Unweighted mean F1 score across all 7 classes
+tau_Cov95_open_set_weighted_f1,0.7632825640601142,operating_point,Support-weighted mean F1 score across all 7 classes
+tau_Cov95_realized_test_fpr_normal,0.021594594594594594,operating_point,Realized False Positive Rate on Normal test flows (799 / 37000)
+tau_Cov95_realized_test_fpr_known,0.043363184335290565,operating_point,Rejection rate across all known test flows (3375 / 77831)
+tau_Cov95_known_coverage,0.9566368156647095,operating_point,Known traffic accepted as known (74456 / 77831)
+tau_Cov95_unknown_detection_rate,0.4572317262830482,operating_point,Recall on all unknown attack flows (2058 / 4501)

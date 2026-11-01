@@ -116,17 +116,17 @@ def train_openset_classifier(
     y_test_k = extract_known_multiclass_labels(df_test_known)
 
     # 4. Instantiate LightGBM Model with configuration hyperparameters
-    lgb_params = cfg.model.get("hyperparameters", {}).get("lightgbm", {
+    lgb_params = dict(cfg.model.get("hyperparameters", {}).get("lightgbm", {
         "n_estimators": 150,
         "learning_rate": 0.05,
         "max_depth": 10,
         "num_leaves": 31,
-        "random_state": random_state,
         "n_jobs": -1,
         "verbose": -1,
-    })
+    }))
+    lgb_params.pop("random_state", None)
 
-    logger.info("Instantiating LightGBMModel with parameters: %s", lgb_params)
+    logger.info("Instantiating LightGBMModel with parameters: %s (seed=%d)", lgb_params, random_state)
     model = LightGBMModel(task="multiclass", random_state=random_state, **lgb_params)
 
     # 5. Train Model on D_train_known with D_val_known for early stopping

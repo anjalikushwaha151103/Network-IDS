@@ -1,0 +1,458 @@
+{
+  "model_architecture": {
+    "classes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "n_features": 48,
+    "hidden_layer_sizes": [
+      128,
+      64
+    ],
+    "activation": "relu",
+    "solver": "adam",
+    "lr_init": 0.001,
+    "early_stopping": true,
+    "n_iter": 45,
+    "loss_curve_len": 45,
+    "validation_scores_len": 45,
+    "best_validation_score": 0.8253155618324653,
+    "weight_shapes": [
+      [
+        48,
+        128
+      ],
+      [
+        128,
+        64
+      ],
+      [
+        64,
+        6
+      ]
+    ],
+    "bias_shapes": [
+      [
+        128
+      ],
+      [
+        64
+      ],
+      [
+        6
+      ]
+    ]
+  },
+  "data_integrity": {
+    "partition_sizes": {
+      "df_train_known": 113288,
+      "df_val_known": 24276,
+      "df_evt_fit": 12138,
+      "df_thresh_cal": 12139,
+      "df_test_known": 77831,
+      "df_test_unknown": 4501,
+      "df_test_total": 82332,
+      "purged_train_unknowns": 13500
+    },
+    "zero_leakage_verified": true,
+    "disjoint_partitions_verified": true
+  },
+  "logit_verification": {
+    "max_logit_diff": 0.0,
+    "max_prob_diff": 0.0,
+    "shape": [
+      77831,
+      6
+    ]
+  },
+  "closed_set_recomputation": {
+    "accuracy": 0.7405917950431062,
+    "macro_f1": 0.4933079628943338,
+    "weighted_f1": 0.7536733441776979,
+    "per_class": {
+      "Normal": {
+        "precision": 0.9647162712124703,
+        "recall": 0.6791081081081081,
+        "f1_score": 0.7971005297719126,
+        "support": 37000
+      },
+      "Analysis": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "support": 677
+      },
+      "Generic": {
+        "precision": 0.9989552402947323,
+        "recall": 0.962694080864819,
+        "f1_score": 0.9804895161507947,
+        "support": 18871
+      },
+      "Exploits": {
+        "precision": 0.6065512978986403,
+        "recall": 0.881602587136184,
+        "f1_score": 0.7186584651435266,
+        "support": 11132
+      },
+      "Fuzzers": {
+        "precision": 0.2666259541984733,
+        "recall": 0.720224348399868,
+        "f1_score": 0.38917858893791507,
+        "support": 6062
+      },
+      "DoS": {
+        "precision": 0.41854636591478694,
+        "recall": 0.04084128148691612,
+        "f1_score": 0.07442067736185383,
+        "support": 4089
+      }
+    },
+    "confusion_matrix_recomputed": [
+      [
+        25127,
+        622,
+        3,
+        1183,
+        10061,
+        4
+      ],
+      [
+        6,
+        0,
+        0,
+        400,
+        240,
+        31
+      ],
+      [
+        6,
+        0,
+        18167,
+        498,
+        191,
+        9
+      ],
+      [
+        73,
+        22,
+        8,
+        9814,
+        1080,
+        135
+      ],
+      [
+        789,
+        0,
+        0,
+        854,
+        4366,
+        53
+      ],
+      [
+        45,
+        1,
+        8,
+        3431,
+        437,
+        167
+      ]
+    ],
+    "analysis_confusion": {
+      "predicted_as_exploits": 400,
+      "predicted_as_fuzzers": 240,
+      "predicted_as_dos": 31,
+      "tp": 0
+    },
+    "dos_confusion": {
+      "predicted_as_exploits": 3431,
+      "predicted_as_fuzzers": 437,
+      "tp": 167
+    }
+  },
+  "openset_detectors": {
+    "MSP": {
+      "auroc": 0.8188887834384648,
+      "aupr_out": 0.19067976879412696,
+      "aupr_in": 0.9878677561785506,
+      "oscr_auc": 0.6713607983043237,
+      "tau_fpr05": 0.475560453950339,
+      "tau_cov95": 0.5562006167651216,
+      "fpr05_normal_fpr": 0.1308108108108108,
+      "fpr05_known_coverage": 0.8355154115969216,
+      "fpr05_unknown_detection": 0.5078871361919574,
+      "fpr05_open_set_acc": 0.6701039692950493,
+      "fpr05_open_set_macro_f1": 0.43673049807853725,
+      "cov95_normal_fpr": 0.03824324324324324,
+      "cov95_known_coverage": 0.9499042797856895,
+      "cov95_unknown_detection": 0.29237947122861585,
+      "cov95_open_set_acc": 0.7006145848515766,
+      "cov95_open_set_macro_f1": 0.45161570822925795,
+      "per_category_fpr05": {
+        "Reconnaissance": {
+          "support": 3496,
+          "detected": 1784,
+          "recall": 0.5102974828375286
+        },
+        "Backdoor": {
+          "support": 583,
+          "detected": 320,
+          "recall": 0.548885077186964
+        },
+        "Shellcode": {
+          "support": 378,
+          "detected": 175,
+          "recall": 0.46296296296296297
+        },
+        "Worms": {
+          "support": 44,
+          "detected": 7,
+          "recall": 0.1590909090909091
+        }
+      },
+      "per_category_cov95": {
+        "Reconnaissance": {
+          "support": 3496,
+          "detected": 1048,
+          "recall": 0.2997711670480549
+        },
+        "Backdoor": {
+          "support": 583,
+          "detected": 181,
+          "recall": 0.31046312178387653
+        },
+        "Shellcode": {
+          "support": 378,
+          "detected": 84,
+          "recall": 0.2222222222222222
+        },
+        "Worms": {
+          "support": 44,
+          "detected": 3,
+          "recall": 0.06818181818181818
+        }
+      }
+    },
+    "Energy": {
+      "auroc": 0.8593321507693263,
+      "aupr_out": 0.20798609543965957,
+      "aupr_in": 0.9908564210448421,
+      "oscr_auc": 0.6905664367487432,
+      "tau_fpr05": -3.2182289878357744,
+      "tau_cov95": -2.7990767172135795,
+      "fpr05_normal_fpr": 0.1561891891891892,
+      "fpr05_known_coverage": 0.8381107784815819,
+      "fpr05_unknown_detection": 0.6551877360586537,
+      "fpr05_open_set_acc": 0.6865738716416461,
+      "fpr05_open_set_macro_f1": 0.45279978916080893,
+      "cov95_normal_fpr": 0.06513513513513514,
+      "cov95_known_coverage": 0.9343963202322982,
+      "cov95_unknown_detection": 0.3483670295489891,
+      "cov95_open_set_acc": 0.6965456930476607,
+      "cov95_open_set_macro_f1": 0.4516916288351701,
+      "per_category_fpr05": {
+        "Reconnaissance": {
+          "support": 3496,
+          "detected": 2284,
+          "recall": 0.6533180778032036
+        },
+        "Backdoor": {
+          "support": 583,
+          "detected": 388,
+          "recall": 0.6655231560891939
+        },
+        "Shellcode": {
+          "support": 378,
+          "detected": 270,
+          "recall": 0.7142857142857143
+        },
+        "Worms": {
+          "support": 44,
+          "detected": 7,
+          "recall": 0.1590909090909091
+        }
+      },
+      "per_category_cov95": {
+        "Reconnaissance": {
+          "support": 3496,
+          "detected": 1216,
+          "recall": 0.34782608695652173
+        },
+        "Backdoor": {
+          "support": 583,
+          "detected": 223,
+          "recall": 0.38250428816466553
+        },
+        "Shellcode": {
+          "support": 378,
+          "detected": 126,
+          "recall": 0.3333333333333333
+        },
+        "Worms": {
+          "support": 44,
+          "detected": 3,
+          "recall": 0.06818181818181818
+        }
+      }
+    },
+    "OpenMax": {
+      "auroc": 0.8543425446456145,
+      "aupr_out": 0.1811781519423693,
+      "aupr_in": 0.9905728167359047,
+      "oscr_auc": 0.676985918233089,
+      "tau_fpr05": 0.03936294533909908,
+      "tau_cov95": 0.0780163884472662,
+      "fpr05_normal_fpr": 0.15513513513513513,
+      "fpr05_known_coverage": 0.8083026043607303,
+      "fpr05_unknown_detection": 0.7298378138191512,
+      "fpr05_open_set_acc": 0.6675411747558665,
+      "fpr05_open_set_macro_f1": 0.4410144216014272,
+      "cov95_normal_fpr": 0.05459459459459459,
+      "cov95_known_coverage": 0.9299122457632563,
+      "cov95_unknown_detection": 0.30859808931348587,
+      "cov95_open_set_acc": 0.6839139095369966,
+      "cov95_open_set_macro_f1": 0.43799230765877856,
+      "per_category_fpr05": {
+        "Reconnaissance": {
+          "support": 3496,
+          "detected": 2571,
+          "recall": 0.7354118993135011
+        },
+        "Backdoor": {
+          "support": 583,
+          "detected": 406,
+          "recall": 0.6963979416809606
+        },
+        "Shellcode": {
+          "support": 378,
+          "detected": 294,
+          "recall": 0.7777777777777778
+        },
+        "Worms": {
+          "support": 44,
+          "detected": 14,
+          "recall": 0.3181818181818182
+        }
+      },
+      "per_category_cov95": {
+        "Reconnaissance": {
+          "support": 3496,
+          "detected": 1139,
+          "recall": 0.32580091533180777
+        },
+        "Backdoor": {
+          "support": 583,
+          "detected": 147,
+          "recall": 0.2521440823327616
+        },
+        "Shellcode": {
+          "support": 378,
+          "detected": 95,
+          "recall": 0.25132275132275134
+        },
+        "Worms": {
+          "support": 44,
+          "detected": 8,
+          "recall": 0.18181818181818182
+        }
+      }
+    }
+  },
+  "distribution_shift": {
+    "MSP": {
+      "cal_normal_mean": 0.08039633242994706,
+      "cal_normal_std": 0.16820553754934028,
+      "test_normal_mean": 0.17986288779724008,
+      "test_normal_std": 0.2200061833931979,
+      "tau_val": 0.475560453950339,
+      "cal_fpr": 0.05,
+      "test_fpr": 0.1308108108108108,
+      "shift_ratio": 2.616216216216216
+    },
+    "Energy": {
+      "cal_normal_mean": -14.035752289562364,
+      "cal_normal_std": 7.259338910062019,
+      "test_normal_mean": -10.70420178937558,
+      "test_normal_std": 7.807242665329158,
+      "tau_val": -3.2182289878357744,
+      "cal_fpr": 0.05,
+      "test_fpr": 0.1561891891891892,
+      "shift_ratio": 3.1237837837837836
+    },
+    "OpenMax": {
+      "cal_normal_mean": 0.006867920805756245,
+      "cal_normal_std": 0.037297666369531815,
+      "test_normal_mean": 0.01734056232649397,
+      "test_normal_std": 0.047932247972488844,
+      "tau_val": 0.03936294533909908,
+      "cal_fpr": 0.05,
+      "test_fpr": 0.15513513513513513,
+      "shift_ratio": 3.1027027027027025
+    }
+  },
+  "weibull_audit": {
+    "Normal": {
+      "class_id": 0,
+      "n_correct": 3665,
+      "eta": 20,
+      "shape": 1.188653492261361,
+      "loc": 35.88672730237793,
+      "scale": 3.2973155591982746,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Analysis": {
+      "class_id": 1,
+      "n_correct": 23,
+      "eta": 5,
+      "shape": 1.9966924387766487,
+      "loc": 12.118052066166781,
+      "scale": 7.802806198097669,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Generic": {
+      "class_id": 2,
+      "n_correct": 2924,
+      "eta": 20,
+      "shape": 1.2415181127564123,
+      "loc": 12.336146088119289,
+      "scale": 1.4406306854181703,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Exploits": {
+      "class_id": 3,
+      "n_correct": 2302,
+      "eta": 20,
+      "shape": 0.7208871972987403,
+      "loc": 13.706943617290603,
+      "scale": 3.906791844897682,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Fuzzers": {
+      "class_id": 4,
+      "n_correct": 1034,
+      "eta": 20,
+      "shape": 1.0317659975868736,
+      "loc": 10.56537767812906,
+      "scale": 2.3206939764714805,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "DoS": {
+      "class_id": 5,
+      "n_correct": 62,
+      "eta": 12,
+      "shape": 0.7392113778420224,
+      "loc": 4.827104387514109,
+      "scale": 2.36245106133876,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    }
+  }
+}

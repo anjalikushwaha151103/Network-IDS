@@ -102,6 +102,7 @@ class OpenMaxDetector(BaseOODDetector):
             raise ValueError("Non-finite values encountered in raw logits returned by model.predict_logits()")
 
         self.n_classes_ = logits_evt.shape[1]
+        self.model_name_ = getattr(model, "model_name", "")
         correct_mask = (preds_evt == y_evt)
 
         self.mavs_ = {}
@@ -354,9 +355,23 @@ class OpenMaxDetector(BaseOODDetector):
         if not self.is_fitted:
             raise RuntimeError("Detector is not fitted yet.")
 
+        model_canonical = getattr(self, "model_name_", "").lower()
+        if model_canonical == "random_forest":
+            adaptation_note = "Random Forest Centered Log-Ratio (CLR) pseudo-logits used as Class Activation Vectors (adaptation of canonical CNN OpenMax)"
+        elif model_canonical == "xgboost":
+            adaptation_note = "XGBoost raw additive margins (output_margin=True) used as Class Activation Vectors (adaptation of canonical CNN OpenMax)"
+        elif model_canonical == "logistic_regression":
+            adaptation_note = "Logistic Regression linear decision logits (X @ W^T + b) used as Class Activation Vectors (adaptation of canonical CNN OpenMax)"
+        elif model_canonical == "mlp":
+            adaptation_note = "MLP native pre-softmax activation vectors used as Class Activation Vectors (canonical neural network OpenMax, Bendale & Boult 2016)"
+        elif model_canonical == "lightgbm":
+            adaptation_note = "LightGBM raw margins used as Class Activation Vectors (adaptation of canonical CNN OpenMax)"
+        else:
+            adaptation_note = f"{self.model_name_} activations used as Class Activation Vectors (adaptation of canonical CNN OpenMax)"
+
         return {
             "method": "OpenMax (EVT-Based Adaptation)",
-            "adaptation_note": "LightGBM raw margins used as Class Activation Vectors (adaptation of canonical CNN OpenMax)",
+            "adaptation_note": adaptation_note,
             "hyperparameters": {
                 "alpha": self.alpha,
                 "eta_ratio": self.eta_ratio,

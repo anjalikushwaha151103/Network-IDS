@@ -21,6 +21,8 @@ class MLPModel(BaseNIDSModel):
             "n_iter_no_change": 10,
         }
         default_params.update(hyperparameters)
+        if "hidden_layer_sizes" in default_params and isinstance(default_params["hidden_layer_sizes"], (list, tuple)):
+            default_params["hidden_layer_sizes"] = tuple(default_params["hidden_layer_sizes"])
         self._underlying_model = MLPClassifier(**default_params)
 
     def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> "MLPModel":
@@ -40,13 +42,20 @@ class MLPModel(BaseNIDSModel):
     def predict_logits(self, X: np.ndarray) -> np.ndarray:
         """Computes exact forward pass activations up to the output layer prior to softmax/sigmoid."""
         activation = X
+        act_fn = getattr(self._underlying_model, "activation", "relu")
         # Propagate through hidden layers
         for i in range(len(self._underlying_model.coefs_) - 1):
             w = self._underlying_model.coefs_[i]
             b = self._underlying_model.intercepts_[i]
             z = np.dot(activation, w) + b
-            # Default activation in MLPClassifier is relu
-            activation = np.maximum(0, z)
+            if act_fn == "relu":
+                activation = np.maximum(0, z)
+            elif act_fn == "tanh":
+                activation = np.tanh(z)
+            elif act_fn == "logistic":
+                activation = 1.0 / (1.0 + np.exp(-np.clip(z, -500, 500)))
+            else:
+                activation = z
 
         # Output layer logits
         w_out = self._underlying_model.coefs_[-1]
@@ -56,3 +65,9 @@ class MLPModel(BaseNIDSModel):
         if len(self.classes_) == 2 and logits.shape[1] == 1:
             logits = np.hstack([-logits, logits])
         return logits
+
+    def get_feature_importances(self) -> Optional[np.ndarray]:
+        """Returns input layer weight magnitude proxy for feature importance."""
+        if hasattr(self._underlying_model, "coefs_") and len(self._underlying_model.coefs_) > 0:
+            return np.mean(np.abs(self._underlying_model.coefs_[0]), axis=1)
+        return super().get_feature_importances()

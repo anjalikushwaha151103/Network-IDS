@@ -17,6 +17,7 @@ class ModelRegistry:
     _aliases: Dict[str, str] = {
         "lr": "logistic_regression",
         "logistic": "logistic_regression",
+        "logisticregression": "logistic_regression",
         "logistic_regression": "logistic_regression",
         "rf": "random_forest",
         "random_forest": "random_forest",
@@ -29,6 +30,9 @@ class ModelRegistry:
         "xgboast": "xgboost",  # Common user typo alias
         "mlp": "mlp",
         "neural_net": "mlp",
+        "neural_network": "mlp",
+        "multilayer_perceptron": "mlp",
+        "multilayerperceptron": "mlp",
     }
 
     @classmethod

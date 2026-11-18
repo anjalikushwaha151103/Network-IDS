@@ -1,0 +1,191 @@
+{
+  "model_verification": {
+    "classes": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "n_features": 48,
+    "solver": "lbfgs",
+    "C": 1.0,
+    "max_iter": 1000,
+    "n_iter": 1000,
+    "converged": false,
+    "random_state": 42
+  },
+  "data_integrity": {
+    "partition_sizes": {
+      "df_train_known": 113288,
+      "df_val_known": 24276,
+      "df_evt_fit": 12138,
+      "df_thresh_cal": 12139,
+      "df_test_known": 77831,
+      "df_test_unknown": 4501,
+      "df_test_total": 82332,
+      "purged_train_unknowns": 13500
+    },
+    "zero_leakage_verified": true
+  },
+  "closed_set_recomputation": {
+    "accuracy": 0.7040510850432347,
+    "macro_f1": 0.46543461992498236,
+    "weighted_f1": 0.7166795047836372,
+    "per_class": {
+      "Normal": {
+        "precision": 0.9142979352179492,
+        "recall": 0.6354864864864865,
+        "f1_score": 0.749812650477542,
+        "support": 37000
+      },
+      "Analysis": {
+        "precision": 0.0,
+        "recall": 0.0,
+        "f1_score": 0.0,
+        "support": 677
+      },
+      "Generic": {
+        "precision": 0.997038012177061,
+        "recall": 0.9632239944888983,
+        "f1_score": 0.9798393617594738,
+        "support": 18871
+      },
+      "Exploits": {
+        "precision": 0.5265058837236397,
+        "recall": 0.811893639956881,
+        "f1_score": 0.6387730581666549,
+        "support": 11132
+      },
+      "Fuzzers": {
+        "precision": 0.2451564361401969,
+        "recall": 0.6450016496205873,
+        "f1_score": 0.3552769070010449,
+        "support": 6062
+      },
+      "DoS": {
+        "precision": 0.30228136882129275,
+        "recall": 0.03888481291269259,
+        "f1_score": 0.06890574214517876,
+        "support": 4089
+      }
+    },
+    "confusion_matrix_reconciled": true
+  },
+  "openset_detectors": {
+    "MSP": {
+      "auroc": 0.8108157086867049,
+      "aupr_out": 0.12865668527291085,
+      "aupr_in": 0.9878037311298279,
+      "oscr_auc": 0.6492650973068758,
+      "tau_fpr05": 0.5367945038226996,
+      "tau_cov95": 0.6223566358261154,
+      "fpr05_normal_fpr": 0.12524324324324324,
+      "fpr05_unknown_detection": 0.3743612530548767,
+      "cov95_normal_fpr": 0.029621621621621623,
+      "cov95_unknown_detection": 0.09442346145301045,
+      "reconciled": true
+    },
+    "Energy": {
+      "auroc": 0.8480145676834926,
+      "aupr_out": 0.15652376515593122,
+      "aupr_in": 0.990280892278001,
+      "oscr_auc": 0.6513441009288804,
+      "tau_fpr05": -3.3702379861658716,
+      "tau_cov95": -2.2887444972608435,
+      "fpr05_normal_fpr": 0.12427027027027027,
+      "fpr05_unknown_detection": 0.6538546989557876,
+      "cov95_normal_fpr": 0.022837837837837837,
+      "cov95_unknown_detection": 0.06998444790046657,
+      "reconciled": true
+    },
+    "OpenMax": {
+      "auroc": 0.8250703074693155,
+      "aupr_out": 0.13343101972609384,
+      "aupr_in": 0.9888362163122502,
+      "oscr_auc": 0.6378684287817891,
+      "tau_fpr05": 0.041110047666152984,
+      "tau_cov95": 0.10009181613994311,
+      "fpr05_normal_fpr": 0.1044864864864865,
+      "fpr05_unknown_detection": 0.5965341035325483,
+      "cov95_normal_fpr": 0.018756756756756757,
+      "cov95_unknown_detection": 0.051544101310819816,
+      "reconciled": true
+    }
+  },
+  "weibull_audit": {
+    "Normal": {
+      "class_id": 0,
+      "n_correct": 3548,
+      "eta": 20,
+      "shape": 0.6202486471788007,
+      "loc": 19.769373774776664,
+      "scale": 2.2989331274793696,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Analysis": {
+      "class_id": 1,
+      "n_correct": 9,
+      "eta": 5,
+      "shape": 2.359940911105907,
+      "loc": 11.077147065201267,
+      "scale": 4.616690279676883,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Generic": {
+      "class_id": 2,
+      "n_correct": 2925,
+      "eta": 20,
+      "shape": 0.737610495048066,
+      "loc": 8.990466148738443,
+      "scale": 0.6300762473128132,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Exploits": {
+      "class_id": 3,
+      "n_correct": 2182,
+      "eta": 20,
+      "shape": 0.6125924897387818,
+      "loc": 14.682376848987364,
+      "scale": 16.254408567591668,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "Fuzzers": {
+      "class_id": 4,
+      "n_correct": 876,
+      "eta": 20,
+      "shape": 1.4875588902484544,
+      "loc": 10.385949641107398,
+      "scale": 2.3514936825524773,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    },
+    "DoS": {
+      "class_id": 5,
+      "n_correct": 92,
+      "eta": 18,
+      "shape": 0.9520491179084678,
+      "loc": 4.4630861609237815,
+      "scale": 2.0372268676388803,
+      "fallback_applied": false,
+      "fallback_reason": "none"
+    }
+  },
+  "prior_model_references": {
+    "LightGBM_actual": {
+      "accuracy": 0.7844817617658774,
+      "macro_f1": 0.5384764278468287,
+      "weighted_f1": 0.7934578441228936
+    },
+    "RandomForest_actual": {
+      "accuracy": 0.7847901221878172,
+      "macro_f1": 0.5319599585843253,
+      "weighted_f1": 0.7918635741164727
+    }
+  }
+}

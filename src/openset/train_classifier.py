@@ -29,6 +29,8 @@ from sklearn.metrics import (
 
 from src.config import Config, default_config
 from src.data_loader import DataLoader
+from src.models import ModelRegistry
+from src.models.base_model import BaseNIDSModel
 from src.models.lightgbm_model import LightGBMModel
 from src.openset.partitioner import (
     KNOWN_CLASS_TO_ID,
@@ -41,6 +43,15 @@ from src.preprocessing import NIDSPreprocessor
 
 logger = logging.getLogger(__name__)
 
+# Canonical model directory and display name mapping
+MODEL_DIR_NAMES: Dict[str, str] = {
+    "lightgbm": "LightGBM",
+    "random_forest": "RandomForest",
+    "xgboost": "XGBoost",
+    "logistic_regression": "LogisticRegression",
+    "mlp": "MLP",
+}
+
 
 def train_openset_classifier(
     model_name: str = "lightgbm",
@@ -48,25 +59,38 @@ def train_openset_classifier(
     random_state: int = 42,
     base_results_dir: str = "results/openset",
     config: Optional[Config] = None,
+    train_df_override: Optional[pd.DataFrame] = None,
+    test_df_override: Optional[pd.DataFrame] = None,
 ) -> Dict[str, Any]:
     """Trains and evaluates the 6-class closed-set classifier.
 
     Args:
-        model_name: Name of model to train (currently "lightgbm").
+        model_name: Name of model to train (e.g. "lightgbm", "random_forest").
         n_features: Number of features to use (default 48 for all actual available features).
         random_state: Fixed random seed (default 42).
         base_results_dir: Directory where results will be saved.
         config: System configuration object.
+        train_df_override: Optional DataFrame override for unit testing without loading full dataset.
+        test_df_override: Optional DataFrame override for unit testing without loading full dataset.
 
     Returns:
         Dictionary containing closed-set metrics, timing, and artifact paths.
     """
     cfg = config or default_config
 
-    # 1. Load official UNSW-NB15 dataset
-    logger.info("Loading official UNSW-NB15 dataset...")
-    loader = DataLoader(cfg)
-    raw_train_df, raw_test_df = loader.load_data()
+    canonical_name = ModelRegistry.get_canonical_name(model_name)
+    model_dir_name = MODEL_DIR_NAMES.get(canonical_name, model_name)
+    display_name = model_dir_name
+
+    # 1. Load official UNSW-NB15 dataset (or use test overrides)
+    if train_df_override is not None and test_df_override is not None:
+        logger.info("Using provided DataFrame overrides for training and testing...")
+        raw_train_df = train_df_override
+        raw_test_df = test_df_override
+    else:
+        logger.info("Loading official UNSW-NB15 dataset...")
+        loader = DataLoader(cfg)
+        raw_train_df, raw_test_df = loader.load_data()
 
     # 2. Partition dataset using strict 4-way stratified partitioner
     logger.info("Partitioning data into disjoint 4-way open-set splits (seed=%d)...", random_state)
@@ -115,31 +139,70 @@ def train_openset_classifier(
     X_test_k, _, _ = preprocessor.transform(df_test_known, feature_subset=selected_features)
     y_test_k = extract_known_multiclass_labels(df_test_known)
 
-    # 4. Instantiate LightGBM Model with configuration hyperparameters
-    lgb_params = dict(cfg.model.get("hyperparameters", {}).get("lightgbm", {
-        "n_estimators": 150,
-        "learning_rate": 0.05,
-        "max_depth": 10,
-        "num_leaves": 31,
-        "n_jobs": -1,
-        "verbose": -1,
-    }))
-    lgb_params.pop("random_state", None)
-
-    logger.info("Instantiating LightGBMModel with parameters: %s (seed=%d)", lgb_params, random_state)
-    model = LightGBMModel(task="multiclass", random_state=random_state, **lgb_params)
-
-    # 5. Train Model on D_train_known with D_val_known for early stopping
-    logger.info("Training 6-class LightGBM classifier on %d samples...", len(X_train))
-    t0_fit = time.perf_counter()
-    callbacks = [lgb.early_stopping(stopping_rounds=15, verbose=False)]
-    model.fit(
-        X_train,
-        y_train,
-        feature_names=selected_features,
-        eval_set=[(X_val, y_val)],
-        callbacks=callbacks,
+    # 4. Instantiate Model with configuration hyperparameters
+    default_hps = {
+        "lightgbm": {
+            "n_estimators": 150,
+            "learning_rate": 0.05,
+            "max_depth": 10,
+            "num_leaves": 31,
+            "n_jobs": -1,
+            "verbose": -1,
+        },
+        "random_forest": {
+            "n_estimators": 100,
+            "max_depth": 16,
+            "n_jobs": -1,
+        },
+        "xgboost": {
+            "n_estimators": 150,
+            "learning_rate": 0.05,
+            "max_depth": 8,
+            "n_jobs": -1,
+            "eval_metric": "mlogloss",
+        },
+        "logistic_regression": {
+            "max_iter": 1000,
+            "C": 1.0,
+            "solver": "lbfgs",
+        },
+        "mlp": {
+            "hidden_layer_sizes": [128, 64],
+            "max_iter": 150,
+            "learning_rate_init": 0.001,
+            "early_stopping": True,
+            "n_iter_no_change": 10,
+        },
+    }
+    model_params = dict(
+        cfg.model.get("hyperparameters", {}).get(
+            canonical_name, default_hps.get(canonical_name, {})
+        )
     )
+    model_params.pop("random_state", None)
+
+    logger.info("Instantiating %s model with parameters: %s (seed=%d)", display_name, model_params, random_state)
+    model = ModelRegistry.create(canonical_name, task="multiclass", random_state=random_state, **model_params)
+
+    # 5. Train Model on D_train_known
+    logger.info("Training 6-class %s classifier on %d samples...", display_name, len(X_train))
+    t0_fit = time.perf_counter()
+    if canonical_name == "lightgbm":
+        callbacks = [lgb.early_stopping(stopping_rounds=15, verbose=False)]
+        model.fit(
+            X_train,
+            y_train,
+            feature_names=selected_features,
+            eval_set=[(X_val, y_val)],
+            callbacks=callbacks,
+        )
+    else:
+        # Models without early stopping / eval_set callbacks (e.g. Random Forest)
+        model.fit(
+            X_train,
+            y_train,
+            feature_names=selected_features,
+        )
     fit_time = time.perf_counter() - t0_fit
     logger.info("Model training completed in %.2f seconds", fit_time)
 
@@ -183,8 +246,8 @@ def train_openset_classifier(
     logger.info("Fit Time:          %.2fs", fit_time)
     logger.info("Inference Latency: %.4f ms/sample", latency_ms_per_sample)
 
-    # 7. Persist Artifacts under results/openset/LightGBM/features_<N>/
-    out_dir = Path(base_results_dir) / "LightGBM" / f"features_{actual_feature_count}"
+    # 7. Persist Artifacts under results/openset/<Model>/features_<N>/
+    out_dir = Path(base_results_dir) / model_dir_name / f"features_{actual_feature_count}"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # A. Save Model & Preprocessor
@@ -196,7 +259,7 @@ def train_openset_classifier(
 
     # B. Save Run Configuration
     run_config = {
-        "model_name": "LightGBM",
+        "model_name": display_name,
         "task": "closed_set_multiclass",
         "random_state": random_state,
         "num_classes": 6,
@@ -204,6 +267,13 @@ def train_openset_classifier(
         "known_class_to_id": KNOWN_CLASS_TO_ID,
         "actual_feature_count": actual_feature_count,
         "feature_names": selected_features,
+        "preprocessing": {
+            "scaling_method": cfg.preprocessing.get("scaling_method", "standard"),
+            "engineer_features": cfg.preprocessing.get("engineer_features", True),
+            "engineered_features": cfg.preprocessing.get("engineered_features", []),
+            "categorical_cols": cfg.preprocessing.get("categorical_cols", []),
+            "drop_columns": cfg.preprocessing.get("drop_columns", []),
+        },
         "dataset_split_counts": {
             "train_known": len(df_train),
             "val_known": len(df_val),
@@ -213,7 +283,7 @@ def train_openset_classifier(
             "test_unknown": len(splits.df_test_unknown),
             "purged_train_unknowns": splits.purged_train_unknown_count,
         },
-        "hyperparameters": lgb_params,
+        "hyperparameters": model_params,
     }
     with open(out_dir / "run_config.json", "w", encoding="utf-8") as f:
         json.dump(run_config, f, indent=2)
@@ -227,7 +297,7 @@ def train_openset_classifier(
 
     # D. Save Metrics JSON
     metrics_data = {
-        "model": "LightGBM",
+        "model": display_name,
         "feature_count": actual_feature_count,
         "accuracy": acc,
         "macro_f1": macro_f1,
@@ -251,16 +321,30 @@ def train_openset_classifier(
     cm_df.to_csv(out_dir / "confusion_matrix_6x6.csv")
 
     # G. Generate and Save Confusion Matrix Plot
-    _plot_confusion_matrix(cm, KNOWN_CLASSES, out_dir / "confusion_matrix_6x6.png")
+    _plot_confusion_matrix(cm, KNOWN_CLASSES, out_dir / "confusion_matrix_6x6.png", model_display_name=display_name)
 
     # H. Generate ROC and PR Curves
-    _plot_multiclass_roc(y_test_k, y_probs, KNOWN_CLASSES, out_dir / "roc_curves_closed_set.png")
-    _plot_multiclass_pr(y_test_k, y_probs, KNOWN_CLASSES, out_dir / "pr_curves_closed_set.png")
+    _plot_multiclass_roc(y_test_k, y_probs, KNOWN_CLASSES, out_dir / "roc_curves_closed_set.png", model_display_name=display_name)
+    _plot_multiclass_pr(y_test_k, y_probs, KNOWN_CLASSES, out_dir / "pr_curves_closed_set.png", model_display_name=display_name)
 
     # I. Generate Feature Importance Plot
     importances = model.get_feature_importances()
     if importances is not None:
-        _plot_feature_importance(selected_features, importances, out_dir / "feature_importance.png")
+        if canonical_name == "logistic_regression":
+            score_type = "Mean |Coefficient|"
+        elif canonical_name == "mlp":
+            score_type = "Mean |First Layer Weights|"
+        elif canonical_name in ["lightgbm", "xgboost"]:
+            score_type = "Gain"
+        else:
+            score_type = "MDI / Gini Impurity"
+        _plot_feature_importance(
+            selected_features,
+            importances,
+            out_dir / "feature_importance.png",
+            model_display_name=display_name,
+            score_type=score_type,
+        )
 
     logger.info("All closed-set artifacts successfully persisted to: %s", out_dir)
 
@@ -274,7 +358,7 @@ def train_openset_classifier(
     }
 
 
-def _plot_confusion_matrix(cm: np.ndarray, class_names: List[str], save_path: Path):
+def _plot_confusion_matrix(cm: np.ndarray, class_names: List[str], save_path: Path, model_display_name: str = "LightGBM"):
     """Plots normalized confusion matrix heatmap."""
     cm_norm = cm.astype("float") / (cm.sum(axis=1)[:, np.newaxis] + 1e-12)
     plt.figure(figsize=(8, 6.5), dpi=300)
@@ -287,7 +371,7 @@ def _plot_confusion_matrix(cm: np.ndarray, class_names: List[str], save_path: Pa
         yticklabels=class_names,
         cbar_kws={"label": "Normalized Ratio"},
     )
-    plt.title("6-Class Closed-Set Confusion Matrix (LightGBM)", fontsize=13, pad=12)
+    plt.title(f"6-Class Closed-Set Confusion Matrix ({model_display_name})", fontsize=13, pad=12)
     plt.xlabel("Predicted Class", fontsize=11)
     plt.ylabel("True Class", fontsize=11)
     plt.tight_layout()
@@ -295,7 +379,7 @@ def _plot_confusion_matrix(cm: np.ndarray, class_names: List[str], save_path: Pa
     plt.close()
 
 
-def _plot_multiclass_roc(y_true: np.ndarray, y_probs: np.ndarray, class_names: List[str], save_path: Path):
+def _plot_multiclass_roc(y_true: np.ndarray, y_probs: np.ndarray, class_names: List[str], save_path: Path, model_display_name: str = "LightGBM"):
     """Plots One-vs-Rest ROC curves for each of the 6 known classes."""
     plt.figure(figsize=(8, 6), dpi=300)
     for idx, cname in enumerate(class_names):
@@ -309,7 +393,7 @@ def _plot_multiclass_roc(y_true: np.ndarray, y_probs: np.ndarray, class_names: L
     plt.ylim([0.0, 1.05])
     plt.xlabel("False Positive Rate", fontsize=11)
     plt.ylabel("True Positive Rate", fontsize=11)
-    plt.title("Closed-Set Multiclass ROC Curves (LightGBM)", fontsize=13)
+    plt.title(f"Closed-Set Multiclass ROC Curves ({model_display_name})", fontsize=13)
     plt.legend(loc="lower right", fontsize=9)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -317,7 +401,7 @@ def _plot_multiclass_roc(y_true: np.ndarray, y_probs: np.ndarray, class_names: L
     plt.close()
 
 
-def _plot_multiclass_pr(y_true: np.ndarray, y_probs: np.ndarray, class_names: List[str], save_path: Path):
+def _plot_multiclass_pr(y_true: np.ndarray, y_probs: np.ndarray, class_names: List[str], save_path: Path, model_display_name: str = "LightGBM"):
     """Plots One-vs-Rest Precision-Recall curves for each of the 6 known classes."""
     plt.figure(figsize=(8, 6), dpi=300)
     for idx, cname in enumerate(class_names):
@@ -330,7 +414,7 @@ def _plot_multiclass_pr(y_true: np.ndarray, y_probs: np.ndarray, class_names: Li
     plt.ylim([0.0, 1.05])
     plt.xlabel("Recall", fontsize=11)
     plt.ylabel("Precision", fontsize=11)
-    plt.title("Closed-Set Precision-Recall Curves (LightGBM)", fontsize=13)
+    plt.title(f"Closed-Set Precision-Recall Curves ({model_display_name})", fontsize=13)
     plt.legend(loc="lower left", fontsize=9)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -338,7 +422,14 @@ def _plot_multiclass_pr(y_true: np.ndarray, y_probs: np.ndarray, class_names: Li
     plt.close()
 
 
-def _plot_feature_importance(feature_names: List[str], importances: np.ndarray, save_path: Path, top_n: int = 25):
+def _plot_feature_importance(
+    feature_names: List[str],
+    importances: np.ndarray,
+    save_path: Path,
+    top_n: int = 25,
+    model_display_name: str = "LightGBM",
+    score_type: str = "Gain",
+):
     """Plots top N feature importances."""
     indices = np.argsort(importances)[::-1][:top_n]
     top_features = [feature_names[i] for i in indices]
@@ -349,8 +440,8 @@ def _plot_feature_importance(feature_names: List[str], importances: np.ndarray, 
     plt.barh(y_pos, top_scores, align="center", color="#2b5c8f", alpha=0.85)
     plt.yticks(y_pos, top_features)
     plt.gca().invert_yaxis()
-    plt.xlabel("Importance Score (Gain)", fontsize=11)
-    plt.title(f"Top {top_n} Feature Importances (LightGBM)", fontsize=13)
+    plt.xlabel(f"Importance Score ({score_type})", fontsize=11)
+    plt.title(f"Top {top_n} Feature Importances ({model_display_name})", fontsize=13)
     plt.grid(True, alpha=0.3, axis="x")
     plt.tight_layout()
     plt.savefig(save_path, dpi=300)

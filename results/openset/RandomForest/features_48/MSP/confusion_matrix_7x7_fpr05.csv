@@ -1,0 +1,8 @@
+,Normal,Analysis,Generic,Exploits,Fuzzers,DoS,Unknown
+Normal,26258,91,0,357,5526,6,4762
+Analysis,4,2,0,13,0,0,658
+Generic,1,0,18172,356,11,7,324
+Exploits,41,218,0,7552,78,19,3224
+Fuzzers,430,34,0,72,2823,1,2702
+DoS,5,242,1,885,32,236,2688
+Unknown,81,32,4,737,702,38,2907

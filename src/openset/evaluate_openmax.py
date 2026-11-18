@@ -11,6 +11,7 @@ Persists all results and artifacts to results/openset/LightGBM/features_48/OpenM
 import json
 import logging
 from pathlib import Path
+import time
 from typing import Any, Dict, List, Optional, Tuple
 import matplotlib
 matplotlib.use("Agg")
@@ -22,7 +23,7 @@ from sklearn.metrics import auc, precision_recall_curve, roc_curve
 
 from src.config import Config, default_config
 from src.data_loader import DataLoader
-from src.models.lightgbm_model import LightGBMModel
+from src.models.base_model import BaseNIDSModel
 from src.openset.openmax_detector import OpenMaxDetector
 from src.openset.metrics import (
     compute_aupr_in,
@@ -73,7 +74,7 @@ def run_openmax_evaluation(
         )
 
     logger.info("Loading pre-trained 6-class model from %s", model_file)
-    model = LightGBMModel.load(model_file)
+    model = BaseNIDSModel.load(model_file)
 
     logger.info("Loading fitted preprocessor from %s", preproc_file)
     preprocessor = NIDSPreprocessor.load(preproc_file)
@@ -81,6 +82,7 @@ def run_openmax_evaluation(
     # Load closed-set metrics for reference
     with open(cls_path / "metrics_closed_set.json", "r", encoding="utf-8") as f:
         closed_set_reference = json.load(f)
+    model_display_name = closed_set_reference.get("model", "LightGBM")
 
     # 2. Load Official Dataset and Partition into Identical 4-Way Splits
     loader = DataLoader(cfg)
@@ -129,7 +131,10 @@ def run_openmax_evaluation(
 
     # 5. Transform Full Untouched Official Test Set (82,332 samples)
     logger.info("Transforming full untouched official test split (%d flows)...", len(df_test))
+    t0_prep = time.perf_counter()
     X_test, _, _ = preprocessor.transform(df_test, feature_subset=feature_names)
+    t_prep = time.perf_counter() - t0_prep
+    latency_prep_ms = (t_prep / len(df_test)) * 1000.0
 
     y_test_7class = extract_openset_7class_labels(df_test)
     y_is_unknown = extract_is_unknown(df_test)
@@ -138,9 +143,17 @@ def run_openmax_evaluation(
 
     # 6. Compute OpenMax Probabilities, Anomaly Scores and Confidences
     logger.info("Computing OpenMax 7-class probability distributions on test set...")
+    t0_inf = time.perf_counter()
     openmax_probs_7 = detector.predict_proba_7class(X_test, model)
     anomaly_scores = openmax_probs_7[:, 6]       # P(Unknown)
     confidence_scores = 1.0 - anomaly_scores     # C_known(x)
+    t_inf = time.perf_counter() - t0_inf
+    latency_inf_ms = (t_inf / len(df_test)) * 1000.0
+    latency_e2e_ms = latency_prep_ms + latency_inf_ms
+
+    logger.info("OpenMax Scoring Latency: %.4f ms/sample (%.2fs total for %d samples)", latency_inf_ms, t_inf, len(df_test))
+    logger.info("Preprocessing Latency: %.4f ms/sample (%.2fs total)", latency_prep_ms, t_prep)
+    logger.info("End-to-End Latency: %.4f ms/sample", latency_e2e_ms)
 
     # Split scores for OSCR calculation
     scores_known = anomaly_scores[y_is_known]
@@ -197,20 +210,50 @@ def run_openmax_evaluation(
     )
 
     # 9. Structure Final Output Metrics
+    model_canonical = getattr(model, "model_name", "").lower()
+    if model_canonical == "random_forest":
+        desc = "OpenMax adapted for Random Forest CLR pseudo-logits (Class Activation Vectors)"
+        source = "RandomForest predict_logits (Centered Log-Ratio pseudo-logits from tree vote probabilities)"
+        note = "Ensemble adaptation using Centered Log-Ratio (CLR) pseudo-logits from tree vote probabilities instead of CNN penultimate activations."
+    elif model_canonical in ["lightgbm", "xgboost"]:
+        desc = f"OpenMax adapted for {model_display_name} raw margins (Class Activation Vectors)"
+        source = f"{model_display_name} predict_logits (raw tree margin outputs)"
+        note = f"Tree-based adaptation using {model_display_name} raw margin vectors (predict_logits) instead of CNN penultimate activations."
+    elif model_canonical == "logistic_regression":
+        desc = "OpenMax adapted for Logistic Regression linear decision logits (Class Activation Vectors)"
+        source = "LogisticRegression predict_logits (exact linear decision logits X @ W^T + b)"
+        note = "Linear model adaptation using exact linear decision logits (predict_logits) instead of CNN penultimate activations."
+    elif model_canonical == "mlp":
+        desc = "Canonical OpenMax on Multi-Layer Perceptron (MLP) pre-softmax logits"
+        source = "MLP predict_logits (native neural network pre-softmax activation vectors)"
+        note = "Neural network pre-softmax logit layer used as Class Activation Vectors (canonical OpenMax formulation, Bendale & Boult 2016)."
+    else:
+        desc = f"OpenMax adapted for {model_display_name} activations (Class Activation Vectors)"
+        source = f"{model_display_name} predict_logits output vectors"
+        note = f"Adaptation using {model_display_name} predict_logits() vectors instead of CNN penultimate activations."
+
     final_results = {
         "method": "OpenMax (EVT-Based Adaptation)",
         "adaptation_details": {
-            "description": "OpenMax adapted for LightGBM raw margins (Class Activation Vectors)",
-            "activation_source": "LightGBM predict_logits (raw tree margin outputs)",
+            "description": desc,
+            "activation_source": source,
             "alpha": alpha,
             "eta_ratio": eta_ratio,
             "min_eta": min_eta,
             "max_eta": max_eta,
             "distance_metric": "euclidean",
         },
-        "model": "LightGBM",
+        "model": model_display_name,
         "feature_count": len(feature_names),
         "random_state": random_state,
+        "timing": {
+            "preprocessing_time_seconds": t_prep,
+            "preprocessing_latency_ms_per_sample": latency_prep_ms,
+            "scoring_time_seconds": t_inf,
+            "scoring_latency_ms_per_sample": latency_inf_ms,
+            "end_to_end_latency_ms_per_sample": latency_e2e_ms,
+            "total_samples": len(df_test),
+        },
         "calibration": detector.calibration_stats_,
         "threshold_independent_metrics": {
             "auroc": auroc,
@@ -229,7 +272,7 @@ def run_openmax_evaluation(
         },
     }
 
-    # 10. Persist All Artifacts under results/openset/LightGBM/features_48/OpenMax/
+    # 10. Persist All Artifacts under results/openset/<Model>/features_48/OpenMax/
     # A. Save Thresholds JSON
     with open(out_path / "thresholds.json", "w", encoding="utf-8") as f:
         json.dump(detector.calibration_stats_, f, indent=2)
@@ -248,6 +291,9 @@ def run_openmax_evaluation(
         {"metric": "AUPR-Out", "value": aupr_out, "type": "threshold_independent"},
         {"metric": "AUPR-In", "value": aupr_in, "type": "threshold_independent"},
         {"metric": "OSCR_AUC", "value": oscr_auc, "type": "threshold_independent"},
+        {"metric": "scoring_latency_ms_per_sample", "value": latency_inf_ms, "type": "latency"},
+        {"metric": "preprocessing_latency_ms_per_sample", "value": latency_prep_ms, "type": "latency"},
+        {"metric": "end_to_end_latency_ms_per_sample", "value": latency_e2e_ms, "type": "latency"},
         {"metric": "tau_FPR05_threshold", "value": tau_fpr05, "type": "operating_point"},
         {"metric": "tau_FPR05_open_set_accuracy", "value": metrics_fpr05["open_set_accuracy"], "type": "operating_point"},
         {"metric": "tau_FPR05_open_set_macro_f1", "value": metrics_fpr05["open_set_macro_f1"], "type": "operating_point"},
@@ -287,7 +333,7 @@ def run_openmax_evaluation(
     _plot_7x7_confusion_matrix(
         np.array(metrics_fpr05["confusion_matrix_7x7"]),
         OPENSET_7CLASSES,
-        "OpenMax 7x7 Open-Set Confusion Matrix (tau_FPR05)",
+        f"OpenMax 7x7 Open-Set Confusion Matrix ({model_display_name} - tau_FPR05)",
         out_path / "confusion_matrix_7x7_fpr05.png",
     )
 
@@ -296,21 +342,22 @@ def run_openmax_evaluation(
     _plot_7x7_confusion_matrix(
         np.array(metrics_cov95["confusion_matrix_7x7"]),
         OPENSET_7CLASSES,
-        "OpenMax 7x7 Open-Set Confusion Matrix (tau_Cov95)",
+        f"OpenMax 7x7 Open-Set Confusion Matrix ({model_display_name} - tau_Cov95)",
         out_path / "confusion_matrix_7x7_cov95.png",
     )
 
     # G. Save ROC & PR Curves Plot
-    _plot_roc_and_pr_curves(y_is_unknown, anomaly_scores, y_is_known, confidence_scores, out_path / "roc_pr_curves.png")
+    _plot_roc_and_pr_curves(y_is_unknown, anomaly_scores, y_is_known, confidence_scores, out_path / "roc_pr_curves.png", model_display_name=model_display_name)
 
     # H. Save OSCR Curve Plot
-    _plot_oscr_curve(oscr_fpr, oscr_ccr, oscr_auc, out_path / "oscr_curve.png")
+    _plot_oscr_curve(oscr_fpr, oscr_ccr, oscr_auc, out_path / "oscr_curve.png", model_display_name=model_display_name)
 
     # I. Save Experiment Configuration & Reproducibility Metadata
     exp_config = {
         "detector": "OpenMaxDetector",
         "method": "OpenMax (EVT-Based Adaptation)",
-        "adaptation_note": "Tree-based adaptation using LightGBM raw margin vectors (predict_logits) instead of CNN penultimate activations.",
+        "model": model_display_name,
+        "adaptation_note": note,
         "hyperparameters": {
             "alpha": alpha,
             "eta_ratio": eta_ratio,
@@ -361,6 +408,7 @@ def _plot_roc_and_pr_curves(
     y_is_known: np.ndarray,
     confidence_scores: np.ndarray,
     save_path: Path,
+    model_display_name: str = "LightGBM",
 ):
     """Plots dual-panel ROC and PR curves."""
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.5), dpi=300)
@@ -374,7 +422,7 @@ def _plot_roc_and_pr_curves(
     axes[0].set_ylim([0.0, 1.05])
     axes[0].set_xlabel("False Positive Rate (Known flagged as Unknown)", fontsize=10)
     axes[0].set_ylabel("True Positive Rate (Unknown Recall)", fontsize=10)
-    axes[0].set_title("OOD Discrimination ROC Curve (OpenMax)", fontsize=11)
+    axes[0].set_title(f"OOD Discrimination ROC Curve (OpenMax - {model_display_name})", fontsize=11)
     axes[0].legend(loc="lower right")
     axes[0].grid(True, alpha=0.3)
 
@@ -391,7 +439,7 @@ def _plot_roc_and_pr_curves(
     axes[1].set_ylim([0.0, 1.05])
     axes[1].set_xlabel("Recall", fontsize=10)
     axes[1].set_ylabel("Precision", fontsize=10)
-    axes[1].set_title("Precision-Recall Curves (OpenMax)", fontsize=11)
+    axes[1].set_title(f"Precision-Recall Curves (OpenMax - {model_display_name})", fontsize=11)
     axes[1].legend(loc="lower left")
     axes[1].grid(True, alpha=0.3)
 
@@ -400,7 +448,7 @@ def _plot_roc_and_pr_curves(
     plt.close()
 
 
-def _plot_oscr_curve(oscr_fpr: np.ndarray, oscr_ccr: np.ndarray, oscr_auc: float, save_path: Path):
+def _plot_oscr_curve(oscr_fpr: np.ndarray, oscr_ccr: np.ndarray, oscr_auc: float, save_path: Path, model_display_name: str = "LightGBM"):
     """Plots OSCR curve (CCR vs FPR_unknown)."""
     plt.figure(figsize=(8, 6), dpi=300)
     sort_idx = np.argsort(oscr_fpr)
@@ -409,7 +457,7 @@ def _plot_oscr_curve(oscr_fpr: np.ndarray, oscr_ccr: np.ndarray, oscr_auc: float
     plt.ylim([0.0, 1.05])
     plt.xlabel("False Positive Rate on Unknowns (FPR_U)", fontsize=11)
     plt.ylabel("Correct Classification Rate on Knowns (CCR_K)", fontsize=11)
-    plt.title("Open-Set Classification Rate (OSCR) Curve - OpenMax", fontsize=12)
+    plt.title(f"Open-Set Classification Rate (OSCR) Curve - OpenMax ({model_display_name})", fontsize=12)
     plt.legend(loc="lower right", fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()

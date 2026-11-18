@@ -1,0 +1,113 @@
+{
+  "model_name": "LogisticRegression",
+  "task": "closed_set_multiclass",
+  "random_state": 42,
+  "num_classes": 6,
+  "known_classes": [
+    "Normal",
+    "Analysis",
+    "Generic",
+    "Exploits",
+    "Fuzzers",
+    "DoS"
+  ],
+  "known_class_to_id": {
+    "Normal": 0,
+    "Analysis": 1,
+    "Generic": 2,
+    "Exploits": 3,
+    "Fuzzers": 4,
+    "DoS": 5
+  },
+  "actual_feature_count": 48,
+  "feature_names": [
+    "proto",
+    "service",
+    "state",
+    "ackdat",
+    "avg_pkt_size",
+    "byte_ratio",
+    "ct_dst_ltm",
+    "ct_dst_sport_ltm",
+    "ct_dst_src_ltm",
+    "ct_flw_http_mthd",
+    "ct_ftp_cmd",
+    "ct_src_dport_ltm",
+    "ct_src_ltm",
+    "ct_srv_dst",
+    "ct_srv_src",
+    "ct_state_ttl",
+    "dbytes",
+    "dinpkt",
+    "djit",
+    "dload",
+    "dloss",
+    "dmean",
+    "dpkts",
+    "dtcpb",
+    "dttl",
+    "dur",
+    "duration_log",
+    "dwin",
+    "is_ftp_login",
+    "is_sm_ips_ports",
+    "pkt_ratio",
+    "rate",
+    "response_body_len",
+    "sbytes",
+    "sinpkt",
+    "sjit",
+    "sload",
+    "sloss",
+    "smean",
+    "spkts",
+    "stcpb",
+    "sttl",
+    "swin",
+    "synack",
+    "tcprtt",
+    "total_bytes",
+    "total_pkts",
+    "trans_depth"
+  ],
+  "preprocessing": {
+    "scaling_method": "standard",
+    "engineer_features": true,
+    "engineered_features": [
+      "total_bytes",
+      "total_pkts",
+      "byte_ratio",
+      "pkt_ratio",
+      "avg_pkt_size",
+      "duration_log"
+    ],
+    "categorical_cols": [
+      "proto",
+      "service",
+      "state"
+    ],
+    "drop_columns": [
+      "id",
+      "srcip",
+      "dstip",
+      "sport",
+      "dsport",
+      "stime",
+      "ltime"
+    ]
+  },
+  "dataset_split_counts": {
+    "train_known": 113288,
+    "val_known": 24276,
+    "evt_fit": 12138,
+    "thresh_cal": 12139,
+    "test_known": 77831,
+    "test_unknown": 4501,
+    "purged_train_unknowns": 13500
+  },
+  "hyperparameters": {
+    "max_iter": 1000,
+    "C": 1.0,
+    "solver": "lbfgs"
+  }
+}

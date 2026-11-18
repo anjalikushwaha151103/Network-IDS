@@ -10,6 +10,7 @@ Persists all results to results/openset/LightGBM/features_48/Energy/.
 import json
 import logging
 from pathlib import Path
+import time
 from typing import Any, Dict, List, Optional, Tuple
 import matplotlib
 matplotlib.use("Agg")
@@ -21,7 +22,7 @@ from sklearn.metrics import auc, precision_recall_curve, roc_curve
 
 from src.config import Config, default_config
 from src.data_loader import DataLoader
-from src.models.lightgbm_model import LightGBMModel
+from src.models.base_model import BaseNIDSModel
 from src.openset.energy_detector import EnergyDetector
 from src.openset.metrics import (
     compute_aupr_in,
@@ -69,7 +70,7 @@ def run_energy_evaluation(
         )
 
     logger.info("Loading pre-trained 6-class model from %s", model_file)
-    model = LightGBMModel.load(model_file)
+    model = BaseNIDSModel.load(model_file)
 
     logger.info("Loading fitted preprocessor from %s", preproc_file)
     preprocessor = NIDSPreprocessor.load(preproc_file)
@@ -77,6 +78,7 @@ def run_energy_evaluation(
     # Load closed-set metrics for reference
     with open(cls_path / "metrics_closed_set.json", "r", encoding="utf-8") as f:
         closed_set_reference = json.load(f)
+    model_display_name = closed_set_reference.get("model", "LightGBM")
 
     # 2. Load Official Dataset and Partition into Identical 4-Way Splits
     loader = DataLoader(cfg)
@@ -111,7 +113,10 @@ def run_energy_evaluation(
 
     # 5. Transform Untouched Official Test Set (82,332 samples)
     logger.info("Transforming full untouched official test split (%d flows)...", len(df_test))
+    t0_prep = time.perf_counter()
     X_test, _, _ = preprocessor.transform(df_test, feature_subset=feature_names)
+    t_prep = time.perf_counter() - t0_prep
+    latency_prep_ms = (t_prep / len(df_test)) * 1000.0
 
     y_test_7class = extract_openset_7class_labels(df_test)
     y_is_unknown = extract_is_unknown(df_test)
@@ -119,8 +124,16 @@ def run_energy_evaluation(
     attack_cat_series = df_test["attack_cat"].astype(str).str.strip()
 
     # 6. Compute Energy Anomaly Scores and Known Confidences on Test Set
+    t0_inf = time.perf_counter()
     anomaly_scores = detector.compute_anomaly_score(X_test, model)
     confidence_scores = detector.compute_confidence_score(X_test, model)
+    t_inf = time.perf_counter() - t0_inf
+    latency_inf_ms = (t_inf / len(df_test)) * 1000.0
+    latency_e2e_ms = latency_prep_ms + latency_inf_ms
+
+    logger.info("Energy Scoring Latency: %.4f ms/sample (%.2fs total for %d samples)", latency_inf_ms, t_inf, len(df_test))
+    logger.info("Preprocessing Latency: %.4f ms/sample (%.2fs total)", latency_prep_ms, t_prep)
+    logger.info("End-to-End Latency: %.4f ms/sample", latency_e2e_ms)
 
     # Split scores for OSCR calculation
     scores_known = anomaly_scores[y_is_known]
@@ -173,12 +186,39 @@ def run_energy_evaluation(
     )
 
     # 9. Structure Final Output Metrics
+    model_canonical = getattr(model, "model_name", "").lower()
+    if model_canonical in ["lightgbm", "xgboost"]:
+        score_repr = "raw_additive_margins"
+        method_nature = f"Free Energy with raw additive margins ({model_display_name})"
+    elif model_canonical == "random_forest":
+        score_repr = "clr_pseudo_logits"
+        method_nature = "CLR-based Energy heuristic"
+    elif model_canonical == "logistic_regression":
+        score_repr = "linear_decision_logits"
+        method_nature = "Free Energy with exact linear decision logits"
+    elif model_canonical == "mlp":
+        score_repr = "native_presoftmax_logits"
+        method_nature = "Canonical Free Energy with native neural network pre-softmax logits"
+    else:
+        score_repr = "logits"
+        method_nature = f"Free Energy with unnormalized logits ({model_display_name})"
+
     final_results = {
         "method": "Energy-Based Detector",
+        "method_nature": method_nature,
+        "score_representation": score_repr,
         "temperature": temperature,
-        "model": "LightGBM",
+        "model": model_display_name,
         "feature_count": len(feature_names),
         "random_state": random_state,
+        "timing": {
+            "preprocessing_time_seconds": t_prep,
+            "preprocessing_latency_ms_per_sample": latency_prep_ms,
+            "scoring_time_seconds": t_inf,
+            "scoring_latency_ms_per_sample": latency_inf_ms,
+            "end_to_end_latency_ms_per_sample": latency_e2e_ms,
+            "total_samples": len(df_test),
+        },
         "calibration": detector.calibration_stats_,
         "threshold_independent_metrics": {
             "auroc": auroc,
@@ -197,7 +237,7 @@ def run_energy_evaluation(
         },
     }
 
-    # 10. Persist Artifacts under results/openset/LightGBM/features_48/Energy/
+    # 10. Persist Artifacts under results/openset/<Model>/features_48/Energy/
     # A. Save Thresholds JSON
     with open(out_path / "thresholds.json", "w", encoding="utf-8") as f:
         json.dump(detector.calibration_stats_, f, indent=2)
@@ -212,6 +252,9 @@ def run_energy_evaluation(
         {"metric": "AUPR-Out", "value": aupr_out, "type": "threshold_independent"},
         {"metric": "AUPR-In", "value": aupr_in, "type": "threshold_independent"},
         {"metric": "OSCR_AUC", "value": oscr_auc, "type": "threshold_independent"},
+        {"metric": "scoring_latency_ms_per_sample", "value": latency_inf_ms, "type": "latency"},
+        {"metric": "preprocessing_latency_ms_per_sample", "value": latency_prep_ms, "type": "latency"},
+        {"metric": "end_to_end_latency_ms_per_sample", "value": latency_e2e_ms, "type": "latency"},
         {"metric": "tau_FPR05_threshold", "value": tau_fpr05, "type": "operating_point"},
         {"metric": "tau_FPR05_open_set_accuracy", "value": metrics_fpr05["open_set_accuracy"], "type": "operating_point"},
         {"metric": "tau_FPR05_open_set_macro_f1", "value": metrics_fpr05["open_set_macro_f1"], "type": "operating_point"},
@@ -251,7 +294,7 @@ def run_energy_evaluation(
     _plot_7x7_confusion_matrix(
         np.array(metrics_fpr05["confusion_matrix_7x7"]),
         OPENSET_7CLASSES,
-        "Energy 7x7 Open-Set Confusion Matrix (tau_FPR05)",
+        f"Energy 7x7 Open-Set Confusion Matrix ({model_display_name} - tau_FPR05)",
         out_path / "confusion_matrix_7x7_fpr05.png",
     )
 
@@ -260,20 +303,24 @@ def run_energy_evaluation(
     _plot_7x7_confusion_matrix(
         np.array(metrics_cov95["confusion_matrix_7x7"]),
         OPENSET_7CLASSES,
-        "Energy 7x7 Open-Set Confusion Matrix (tau_Cov95)",
+        f"Energy 7x7 Open-Set Confusion Matrix ({model_display_name} - tau_Cov95)",
         out_path / "confusion_matrix_7x7_cov95.png",
     )
 
     # F. Save ROC & PR Curves Plot
-    _plot_roc_and_pr_curves(y_is_unknown, anomaly_scores, y_is_known, confidence_scores, out_path / "roc_pr_curves.png")
+    _plot_roc_and_pr_curves(y_is_unknown, anomaly_scores, y_is_known, confidence_scores, out_path / "roc_pr_curves.png", model_display_name=model_display_name)
 
     # G. Save OSCR Curve Plot
-    _plot_oscr_curve(oscr_fpr, oscr_ccr, oscr_auc, out_path / "oscr_curve.png")
+    _plot_oscr_curve(oscr_fpr, oscr_ccr, oscr_auc, out_path / "oscr_curve.png", model_display_name=model_display_name)
 
     # H. Save Experiment Config
+    model_canonical = getattr(model, "model_name", "").lower()
+    score_repr = "raw_additive_margins" if model_canonical in ["lightgbm", "xgboost"] else ("clr_pseudo_logits" if model_canonical == "random_forest" else "logits")
     exp_config = {
         "detector": "EnergyDetector",
         "temperature": temperature,
+        "model": model_display_name,
+        "score_representation": score_repr,
         "model_file": str(model_file),
         "preprocessor_file": str(preproc_file),
         "n_features": len(feature_names),
@@ -316,6 +363,7 @@ def _plot_roc_and_pr_curves(
     y_is_known: np.ndarray,
     confidence_scores: np.ndarray,
     save_path: Path,
+    model_display_name: str = "LightGBM",
 ):
     """Plots dual-panel ROC and PR curves."""
     fig, axes = plt.subplots(1, 2, figsize=(14, 5.5), dpi=300)
@@ -329,7 +377,7 @@ def _plot_roc_and_pr_curves(
     axes[0].set_ylim([0.0, 1.05])
     axes[0].set_xlabel("False Positive Rate (Known flagged as Unknown)", fontsize=10)
     axes[0].set_ylabel("True Positive Rate (Unknown Recall)", fontsize=10)
-    axes[0].set_title("OOD Discrimination ROC Curve (Energy)", fontsize=11)
+    axes[0].set_title(f"OOD Discrimination ROC Curve (Energy - {model_display_name})", fontsize=11)
     axes[0].legend(loc="lower right")
     axes[0].grid(True, alpha=0.3)
 
@@ -346,7 +394,7 @@ def _plot_roc_and_pr_curves(
     axes[1].set_ylim([0.0, 1.05])
     axes[1].set_xlabel("Recall", fontsize=10)
     axes[1].set_ylabel("Precision", fontsize=10)
-    axes[1].set_title("Precision-Recall Curves (Energy)", fontsize=11)
+    axes[1].set_title(f"Precision-Recall Curves (Energy - {model_display_name})", fontsize=11)
     axes[1].legend(loc="lower left")
     axes[1].grid(True, alpha=0.3)
 
@@ -355,7 +403,7 @@ def _plot_roc_and_pr_curves(
     plt.close()
 
 
-def _plot_oscr_curve(oscr_fpr: np.ndarray, oscr_ccr: np.ndarray, oscr_auc: float, save_path: Path):
+def _plot_oscr_curve(oscr_fpr: np.ndarray, oscr_ccr: np.ndarray, oscr_auc: float, save_path: Path, model_display_name: str = "LightGBM"):
     """Plots OSCR curve (CCR vs FPR_unknown)."""
     plt.figure(figsize=(8, 6), dpi=300)
     sort_idx = np.argsort(oscr_fpr)
@@ -364,7 +412,7 @@ def _plot_oscr_curve(oscr_fpr: np.ndarray, oscr_ccr: np.ndarray, oscr_auc: float
     plt.ylim([0.0, 1.05])
     plt.xlabel("False Positive Rate on Unknowns (FPR_U)", fontsize=11)
     plt.ylabel("Correct Classification Rate on Knowns (CCR_K)", fontsize=11)
-    plt.title("Open-Set Classification Rate (OSCR) Curve - Energy", fontsize=12)
+    plt.title(f"Open-Set Classification Rate (OSCR) Curve - Energy ({model_display_name})", fontsize=12)
     plt.legend(loc="lower right", fontsize=10)
     plt.grid(True, alpha=0.3)
     plt.tight_layout()

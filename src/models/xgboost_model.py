@@ -21,6 +21,7 @@ class XGBoostModel(BaseNIDSModel):
             "eval_metric": "mlogloss" if task == "multiclass" else "logloss",
         }
         default_params.update(hyperparameters)
+        self.hyperparameters = default_params
         self._underlying_model = xgb.XGBClassifier(**default_params)
 
     def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> "XGBoostModel":
